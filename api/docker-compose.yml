@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./api
+    container_name: backend
+    ports:
+      - "8000:8000"                  
+    volumes:
+      - ./api/src:/api/src           
+      - ./api/resources:/api/resources
+      - ./api/constants.py:/api/constants.py
+    environment:
+      - ENV=development
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    # Uncomment for gpu access
+    # deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: all
+    #          capabilities: [gpu]

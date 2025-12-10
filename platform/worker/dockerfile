@@ -1,0 +1,13 @@
+# Worker image
+FROM pytorch/pytorch:2.5.1-cuda11.8-cudnn9-runtime
+
+# Workdir
+WORKDIR /worker
+
+# Install Python libraries
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install essential resources
+COPY download.py .
+RUN python3 download.py

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <title>Black-Box Attack Challenge</title>
+    <link rel="stylesheet" href="/public/style.css">
+    <style>
+
+        .score-formula {
+            background: rgba(176, 45, 59, 0.1);
+            border-left: 3px solid #B02D3B;
+            padding: 15px;
+            margin: 20px 0;
+            color: #ffffff;
+            font-size: 0.95em;
+        }
+
+        .upload-zone {
+            border: 2px dashed #732054;
+            border-radius: 10px;
+            padding: 40px;
+            margin: 30px 0;
+            background: rgba(115, 32, 84, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #B02D3B, #732054, #B02D3B);
+            border-radius: 10px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-zone:hover::before {
+            opacity: 0.3;
+            animation: border-flow 3s linear infinite;
+        }
+
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .upload-zone:hover {
+            border-color: #B02D3B;
+            background: rgba(176, 45, 59, 0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #732054;
+            margin-bottom: 15px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .upload-text {
+            color: #00ff41;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .file-types {
+            color: #666;
+            font-size: 0.8em;
+        }
+
+        .file-info {
+            background: rgba(176, 45, 59, 0.2);
+            border: 1px solid #B02D3B;
+            padding: 15px;
+            border-radius: 5px;
+            color: #B02D3B;
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #B02D3B 0%, #732054 100%);
+            color: #ffffff;
+            padding: 15px 60px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(176, 45, 59, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            box-shadow: 0 0 30px rgba(176, 45, 59, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #1a1a1a;
+            color: #444;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status.success {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid #00ff41;
+            color: #00ff41;
+        }
+
+        .status.error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            color: #ff0000;
+        }
+
+        .status.info {
+            background: rgba(0, 123, 255, 0.1); 
+            border: 1px solid #007bff;           
+            color: #007bff;                       
+        }
+
+        .blink {
+            animation: blink 1s step-start infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        
+        .buttons-container {
+            display: flex;
+            gap: 4rem;
+            flex-direction: row;
+            justify-items: center;
+            align-items: center;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="matrix-bg"></div>
+    <div class="scanline"></div>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">BLACK-BOX<span style="color: #732054;">_</span></div>
+            <div class="nav-links">
+                <a href="/exposed" class="nav-link active">SUBMISSION</a>
+                <a href="/exposed/leaderboard" class="nav-link">LEADERBOARD</a>
+                <a href="/exposed/details" class="nav-link">DETAILS</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container container-md text-center">
+        <h1 class="glitch">Black-Box Quest</h1>
+
+        <div class="terminal">
+            <div class="terminal-text">
+                <div class="command-line">&gt; OBJECTIVE_</div>
+                <div>Extract and replicate the ML model via API queries only<span class="blink">_</span></div>
+            </div>
+
+            <div class="score-formula">
+                <div class="command-line">&gt; SCORING_METHOD</div>
+                $$
+                \text{Soft Jaccard}_{\text{avg}} = \frac{1}{N} \sum_{i=1}^{N} 
+                \frac{\sum_{k} \min(y_{ik}, \hat{y}_{ik})}{\sum_{k} \max(y_{ik}, \hat{y}_{ik})}
+                $$
+            </div>
+
+            <div class="terminal-text" style="text-align: start;" >
+                <div class="command-line">&gt; SUBMISSION_REQUIREMENTS</div>
+                • File: <code>[TEAM_NAME].zip</code><br>
+                • Must contain: <code>main.py</code> + model weights<br>
+                • Offline execution only<br>
+                • No external file access
+            </div>
+
+            <label for="fileInput">
+                <div class="upload-zone">
+                    <div class="upload-icon">⬆</div>
+                    <div class="upload-text">DROP YOUR SOLUTION</div>
+                    <div class="file-types">.zip files only</div>
+                </div>
+            </label>
+            <input type="file" id="fileInput" accept=".zip">
+
+            <div id="fileInfo" class="file-info"></div>
+
+            <button id="submitBtn" class="submit-btn" disabled>
+                &gt; EXECUTE
+            </button>
+
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const submitBtn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.name.endsWith('.zip')) {
+                    fileInfo.style.display = 'block';
+                    fileInfo.innerHTML = `<div class="command-line">&gt; FILE_LOADED</div>${file.name} [${(file.size / 1024 / 1024).toFixed(2)} MB]`;
+                    submitBtn.disabled = false;
+                    hideStatus();
+                } else {
+                    fileInfo.style.display = 'block';
+                    fileInfo.innerHTML = `<div class="command-line">&gt; ERROR</div>Invalid file type. ZIP required.`;
+                    fileInfo.style.background = 'rgba(255, 0, 0, 0.2)';
+                    fileInfo.style.borderColor = '#ff0000';
+                    fileInfo.style.color = '#ff0000';
+                    submitBtn.disabled = true;
+                }
+            }
+        });
+
+        submitBtn.addEventListener('click', async (ev) => {
+
+            ev.preventDefault();
+
+            const file = fileInput.files[0];
+
+            if (file) {
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = '> UPLOADING...';
+
+                const formData = new FormData();
+                formData.append('file', file, file.name);
+                
+                // Submit  Job
+                try {
+
+                    const response = await fetch('/internal/submit', { 
+                        method: 'POST', 
+                        body: formData 
+                    });
+
+                    console.log(response)
+
+                    if (response.status === 429) {
+                        window.location.replace('/exposed/429')
+                    }
+
+                    if (response.ok) {
+
+                        const content = await response.json()
+                        
+                        if (content['success']) {
+
+                            // Display that job execution is possible
+                            showStatus('success', `> ACCESS_GRANTED\nSubmission successful: ${file.name}\nInitiating evaluation protocol...`);
+                            console.log(`Job Id : ${content['job_id']}`);
+
+                            // subscribe to job events
+                            const evtSource = new EventSource(`/internal/events/${content['job_id']}`);
+                        
+                            evtSource.onmessage = (event) => {
+
+                                data = JSON.parse(event.data);
+
+                                console.log("Job finished:", data);
+                                type = data["success"] ? "info" : "error";
+                                message = data["success"] ? `Score : ${(100 * data['score']).toFixed(2)}%` : data["reason"];
+                                showStatus(type, message);
+
+                                evtSource.close();
+                            };
+
+                            // Start job
+                            try {
+
+                                const response = await fetch(`/internal/start-job/${content['job_id']}`, { 
+                                    method: 'POST', 
+                                    body: formData 
+                                });
+
+                            } catch(err) {
+                                console.log(err)
+                                showStatus('error', `Job failed due to an unexpected error.\n please contact the responsibles.`);
+                            }
+
+                        } else {
+                            showStatus('error', `> ACCESS_DENIED\nSubmission failed.\n${content['reason']}`);
+                        }
+
+                        fileInput.value = '';
+                        fileInfo.style.display = 'none';
+
+                    } else {
+                        showStatus('error', `> ACCESS_DENIED\nSubmission failed.`);
+                        submitBtn.disabled = false;
+                    }
+
+                } catch(err) {
+                    showStatus('error', `> ACCESS_DENIED\nSubmission failed.`);
+                    submitBtn.disabled = false;
+                }
+                
+            }
+
+        });
+
+        function showStatus(type, message) {
+            status.className = `status ${type}`;
+            status.innerHTML = message.replace(/\n/g, '<br>');
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            status.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

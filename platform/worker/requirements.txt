@@ -1,0 +1,12 @@
+scikit-learn==1.6.1
+imbalanced-learn==0.13.0
+pandas==2.2.3
+polars==1.29.0
+nltk==3.9.1
+spacy==3.8.5
+sentence-transformers==4.1.0
+transformers==4.51.3
+tokenizers==0.21.0
+spacy==3.8.5
+datasets==4.1.1
+textblob==0.19.0

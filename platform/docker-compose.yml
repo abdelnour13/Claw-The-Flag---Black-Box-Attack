@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  platform:
+    build: ./platform
+    expose:
+      - "8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./platform/submits:/platform/submits
+      - ./platform/resources:/platform/resources
+      - ./platform/public:/platform/public
+      - ./platform/src:/platform/src
+      - ./platform/.env:/platform/.env
+    environment:
+      SUBMITS_HOST_PATH: ${PWD}/platform/submits
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - platform

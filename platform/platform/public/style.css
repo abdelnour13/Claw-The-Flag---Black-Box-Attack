@@ -1,0 +1,224 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: #0a0a0a;
+    color: #00ff41;
+    overflow-x: hidden;
+    min-height: 100vh;
+    padding: 90px 20px 40px 20px;
+    position: relative;
+}
+
+.matrix-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.03;
+    z-index: 0;
+    pointer-events: none;
+    background: 
+        linear-gradient(90deg, #00ff41 1px, transparent 1px),
+        linear-gradient(#00ff41 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.scanline {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(176, 45, 59, 0.05) 50%,
+        transparent 100%
+    );
+    animation: scan 8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+.container {
+    position: relative;
+    z-index: 2;
+    margin: 0 auto;
+}
+
+.container.container-md {
+    max-width: 800px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.container.container-lg {
+    max-width: 1200px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.glitch {
+    font-size: 3.5em;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: relative;
+    color: #B02D3B;
+    letter-spacing: 10px;
+    animation: glitch 3s infinite;
+    text-shadow: 
+        2px 2px #732054,
+        -2px -2px #00ff41;
+    margin-bottom: 10px;
+}
+
+@keyframes glitch {
+    0%, 90%, 100% {
+        transform: translate(0);
+    }
+    92% {
+        transform: translate(-2px, 2px);
+    }
+    94% {
+        transform: translate(2px, -2px);
+    }
+    96% {
+        transform: translate(-2px, -2px);
+    }
+    98% {
+        transform: translate(2px, 2px);
+    }
+}
+
+.subtitle {
+    color: #732054;
+    font-size: 1.2em;
+    letter-spacing: 3px;
+}
+
+.terminal {
+    background: rgba(10, 10, 10, 0.9);
+    border: 2px solid #B02D3B;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 
+        0 0 20px rgba(176, 45, 59, 0.5),
+        inset 0 0 20px rgba(115, 32, 84, 0.2);
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.terminal::before {
+    content: '●●●';
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    color: #732054;
+    font-size: 0.8em;
+    letter-spacing: 5px;
+}
+
+.command-line {
+    color: #B02D3B;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(10, 10, 10, 0.95);
+    border-bottom: 2px solid #B02D3B;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #B02D3B;
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px rgba(176, 45, 59, 0.5);
+}
+
+.nav-links {
+    display: flex;
+    gap: 30px;
+}
+
+.nav-link {
+    color: #00ff41;
+    text-decoration: none;
+    padding: 8px 15px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    font-size: 0.9em;
+    letter-spacing: 2px;
+    position: relative;
+}
+
+.nav-link::before {
+    content: '> ';
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nav-link:hover::before {
+    opacity: 1;
+}
+
+.nav-link:hover {
+    color: #B02D3B;
+    border-color: #732054;
+    background: rgba(115, 32, 84, 0.1);
+}
+
+.nav-link.active {
+    color: #B02D3B;
+    border-color: #B02D3B;
+    background: rgba(176, 45, 59, 0.1);
+    box-shadow: 0 0 15px rgba(176, 45, 59, 0.3);
+}
+
+.blink {
+    animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+code:not(.python) {
+    color: #732054;
+    background: rgba(115, 32, 84, 0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
