@@ -3,23 +3,24 @@ import zipfile
 import shutil
 import asyncio
 import uuid
-import tempfile
 import json
-from fastapi import FastAPI, UploadFile, HTTPException, status, APIRouter
+from datetime import datetime
+from fastapi import FastAPI, UploadFile, HTTPException, status, APIRouter, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pathlib import Path
-from typing import AsyncGenerator, List, Dict, Tuple
+from typing import AsyncGenerator, Dict, Tuple
 from contextlib import asynccontextmanager
 from sqlmodel import select, func
 from sqlalchemy.orm import aliased
 from dataclasses import asdict
-from .models import SubmitResponse, StartJobResponse, LeaderboardSubmission
+from .models import SubmitResponse, StartJobResponse
 from .db import create_db_and_tables, SessionDep, Submit
 from .job import Job, run_submission
 from .utils import parse_file_size
-from .constants import MAX_REQUEST_SIZE
+from .constants import MAX_REQUEST_SIZE, END_DATE
 
 ### Run Job function
 async def run_job() -> None:
@@ -58,9 +59,24 @@ async def lifespan(app : FastAPI):
     yield
 
 ### Create App
+def challenge_ended():
+    return datetime.now() > END_DATE
+
+def check_challenge_ended():
+
+    if challenge_ended():
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message" : "Challenge has ended! Good luck."
+            }
+        )
+
 app = FastAPI(lifespan=lifespan)
 public_router = APIRouter()
-internal_router = APIRouter()
+internal_router = APIRouter(dependencies=[Depends(check_challenge_ended)])
+templates = Jinja2Templates(directory="templates")
 
 ### Memory
 jobs : Dict[str, Job] = {}
@@ -79,14 +95,79 @@ app.add_middleware(
 ### Mount Static Folder
 app.mount("/public", StaticFiles(directory="public"), name="static")
 
-
+### Ednpoints
 @public_router.get("/")
-def main_page():
-    return FileResponse('public/index.html')
+def main_page(request : Request):
 
-@public_router.get("/leaderboard")
-def leaderboard():
-    return FileResponse('public/leaderboard.html')
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "challenge_ended" : challenge_ended()
+        }
+    )
+
+@public_router.get("/leaderboard", response_class=HTMLResponse)
+def leaderboard(
+    request : Request,
+    session : SessionDep
+):
+
+    ### SQL-Query
+    SubmitInner = aliased(Submit)
+
+    subq = (
+        select(SubmitInner.id)
+        .where(
+            SubmitInner.team == Submit.team,
+            SubmitInner.status == "SUCCESS"
+        )
+        .order_by(
+            SubmitInner.score.desc(),
+            SubmitInner.created_at.asc()
+        )
+        .limit(1)
+        .correlate(Submit)
+        .scalar_subquery()
+    )
+
+    rank_col = func.rank().over(
+        order_by=[
+            Submit.score.desc(),
+            Submit.created_at.asc()
+        ]
+    )
+
+    query = (
+        select(Submit, rank_col.label("rank"))
+        .where(Submit.id == subq)
+        .order_by("rank")
+    )
+
+    ### Excute Query
+    results = session.exec(query).all()
+
+    ### Context to pass
+    entries = [
+        {
+            "id" : result.id, 
+            "team" : result.team,
+            "hour" : result.created_at.strftime("%H:%M:%S"),
+            "score" : result.score,
+            "status" : result.status,
+            "reason" : result.reason,
+            "rank" : rank
+        }
+        for result, rank in results
+    ]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="leaderboard.html",
+        context={
+            "entries" : entries
+        }
+    )
 
 @public_router.get("/details")
 def details():
@@ -96,12 +177,10 @@ def details():
 def error_page_429():
     return FileResponse('public/429.html')
 
-
 @internal_router.post("/submit")
 def submit(file : UploadFile) -> SubmitResponse:
 
     ### Check File Size
-    
     if file.size >= parse_file_size(MAX_REQUEST_SIZE):
         return SubmitResponse(success=False,reason=f"File is too large, maximum is : {MAX_REQUEST_SIZE}.")
 
@@ -112,45 +191,36 @@ def submit(file : UploadFile) -> SubmitResponse:
     try:
 
         submits = Path("submits")
+        job_id = str(uuid.uuid4())
+        submission = submits / job_id
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        ### Extract File
+        with zipfile.ZipFile(file.file, 'r') as f:
+            f.extractall(submission)
 
-            temp_dir = Path(temp_dir)
+        ### check if directory contains main.py
+        main_file : Path = submission / 'main.py'
 
-            ### Extract File
-            with zipfile.ZipFile(file.file, 'r') as f:
-                f.extractall(temp_dir)
+        if not main_file.exists():
+            return SubmitResponse(success=False, reason="Main file doesn't exist.")
 
-            dirname : Path = temp_dir / os.path.splitext(file.filename)[0]
+        ### Copy resources to the job
+        resources = Path("resources")
 
-            ### check if directory contains main.py
-            main_file : Path = dirname / 'main.py'
+        keywords_src = resources / 'keywords.txt'
+        articles_src = resources / 'articles.csv'
 
-            if not main_file.exists():
-                return SubmitResponse(success=False, reason="Main file doesn't exist.")
+        keywords_dst = submission / 'keywords.txt'
+        articles_dst = submission / 'articles.csv'
 
-            ### Copy resources to the job
-            resources = Path("resources")
-
-            keywords_src = resources / 'keywords.txt'
-            articles_src = resources / 'articles.csv'
-
-            keywords_dst = dirname / 'keywords.txt'
-            articles_dst = dirname / 'articles.csv'
-
-            shutil.copyfile(keywords_src, keywords_dst)
-            shutil.copyfile(articles_src, articles_dst)
-
-            ### Save directory
-            job_id = str(uuid.uuid4())
-            job_dir = str(submits / job_id)
-            shutil.copytree(dirname, job_dir)
+        shutil.copyfile(keywords_src, keywords_dst)
+        shutil.copyfile(articles_src, articles_dst)
 
         ### Save The Job
         jobs[job_id] = Job(
             job_id=job_id,
-            team=os.path.splitext(file.filename)[0],
-            filename=job_dir
+            team=os.path.splitext(file.filename)[0].upper(),
+            filename=str(submission)
         )
 
     finally:
@@ -161,7 +231,7 @@ def submit(file : UploadFile) -> SubmitResponse:
 @internal_router.post("/start-job/{job_id}")
 async def start_job(job_id : str, session: SessionDep) -> StartJobResponse:
 
-    job = jobs.get(job_id)
+    job = jobs.pop(job_id, None)
 
     if job is None:
 
@@ -174,7 +244,6 @@ async def start_job(job_id : str, session: SessionDep) -> StartJobResponse:
         )
     
     await job_queue.put((job,session))
-    jobs.pop(job_id, None)
     return StartJobResponse(success=True)
 
 @internal_router.get("/events/{job_id}")
@@ -192,45 +261,6 @@ async def sse(job_id: str) -> StreamingResponse:
             await asyncio.sleep(0.5)
 
     return StreamingResponse(generator(), media_type="text/event-stream")
-
-@internal_router.get("/leaderboard-data")
-def leaderboard_data(session : SessionDep) -> List[LeaderboardSubmission]:
-
-    SubmitInner = aliased(Submit)
-
-    subq = (
-        select(SubmitInner.id)
-        .where(
-            SubmitInner.team == Submit.team,
-            SubmitInner.status == "SUCCESS"
-        )
-        .order_by(SubmitInner.score.desc())
-        .limit(1)
-        .correlate(Submit)
-        .scalar_subquery()
-    )
-
-    rank_col = func.rank().over(order_by=Submit.score.desc())
-
-    query = (
-        select(Submit, rank_col.label("rank"))
-        .where(Submit.id == subq)
-        .order_by("rank")
-    )
-
-    results = session.exec(query).all()
-
-    return [
-        LeaderboardSubmission(
-            id=result.id, 
-            team=result.team,
-            score=result.score,
-            status=result.status,
-            reason=result.reason,
-            rank=rank
-        )
-        for result, rank in results
-    ]
 
 app.include_router(public_router, prefix="/exposed")
 app.include_router(internal_router, prefix="/internal")

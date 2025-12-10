@@ -171,9 +171,81 @@
             align-items: center;
         }
 
+        .challenge-ended-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 10px;
+        }
+
+        .challenge-ended-overlay.active {
+            display: flex;
+        }
+
+        .ended-message {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .ended-icon {
+            font-size: 5em;
+            color: #ff0000;
+            margin-bottom: 20px;
+            animation: pulse-slow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .ended-title {
+            font-size: 2em;
+            color: #ff0000;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .ended-text {
+            color: #d0d0d0;
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        .view-leaderboard-btn {
+            background: linear-gradient(135deg, #732054 0%, #B02D3B 100%);
+            color: #ffffff;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(115, 32, 84, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .view-leaderboard-btn:hover {
+            box-shadow: 0 0 25px rgba(115, 32, 84, 0.8);
+            transform: translateY(-2px);
+        }
+
     </style>
 </head>
-<body>
+<body data-ended="{{challenge_ended}}" >
     <div class="matrix-bg"></div>
     <div class="scanline"></div>
 
@@ -192,6 +264,24 @@
         <h1 class="glitch">Black-Box Quest</h1>
 
         <div class="terminal">
+
+            <!-- Challenge Ended Overlay -->
+            {% if challenge_ended %}
+            <div class="challenge-ended-overlay active">
+                <div class="ended-message">
+                    <div class="ended-icon">🔒</div>
+                    <div class="ended-title">Challenge Ended<span class="blink">_</span></div>
+                    <div class="ended-text">
+                        <div class="command-line" style="color: #ff0000;">&gt; SUBMISSION_CLOSED</div>
+                        The challenge has concluded. No more submissions are accepted.
+                    </div>
+                    <a href="/exposed/leaderboard" class="view-leaderboard-btn">
+                        &gt; View Final Rankings
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="terminal-text">
                 <div class="command-line">&gt; OBJECTIVE_</div>
                 <div>Extract and replicate the ML model via API queries only<span class="blink">_</span></div>
@@ -238,8 +328,14 @@
         const fileInfo = document.getElementById('fileInfo');
         const submitBtn = document.getElementById('submitBtn');
         const status = document.getElementById('status');
+        const challenge_ended = document.body.dataset['ended'].toLowerCase() === "true";
 
         fileInput.addEventListener('change', (e) => {
+
+            if (challenge_ended) {
+                return;
+            }
+
             const file = e.target.files[0];
             if (file) {
                 if (file.name.endsWith('.zip')) {
@@ -262,6 +358,11 @@
 
             ev.preventDefault();
 
+            if (challenge_ended) {
+                showStatus('error', '> SUBMISSION_CLOSED\nChallenge has ended. No more submissions accepted.');
+                return;
+            }
+
             const file = fileInput.files[0];
 
             if (file) {
@@ -280,10 +381,12 @@
                         body: formData 
                     });
 
-                    console.log(response)
-
                     if (response.status === 429) {
                         window.location.replace('/exposed/429')
+                    }
+
+                    if (response.status === 403) {
+                        showStatus('error', '> SUBMISSION_CLOSED\nChallenge has ended. No more submissions accepted.');
                     }
 
                     if (response.ok) {
@@ -294,7 +397,6 @@
 
                             // Display that job execution is possible
                             showStatus('success', `> ACCESS_GRANTED\nSubmission successful: ${file.name}\nInitiating evaluation protocol...`);
-                            console.log(`Job Id : ${content['job_id']}`);
 
                             // subscribe to job events
                             const evtSource = new EventSource(`/internal/events/${content['job_id']}`);
@@ -303,7 +405,6 @@
 
                                 data = JSON.parse(event.data);
 
-                                console.log("Job finished:", data);
                                 type = data["success"] ? "info" : "error";
                                 message = data["success"] ? `Score : ${(100 * data['score']).toFixed(2)}%` : data["reason"];
                                 showStatus(type, message);
@@ -320,7 +421,6 @@
                                 });
 
                             } catch(err) {
-                                console.log(err)
                                 showStatus('error', `Job failed due to an unexpected error.\n please contact the responsibles.`);
                             }
 
@@ -337,6 +437,11 @@
                     }
 
                 } catch(err) {
+
+                    if (response.status === 403) {
+                        showStatus('error', '> SUBMISSION_CLOSED\nChallenge has ended. No more submissions accepted.');
+                    }
+
                     showStatus('error', `> ACCESS_DENIED\nSubmission failed.`);
                     submitBtn.disabled = false;
                 }
@@ -354,6 +459,7 @@
         function hideStatus() {
             status.style.display = 'none';
         }
+
     </script>
 </body>
 </html>

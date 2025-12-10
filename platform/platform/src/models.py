@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 class SubmitResponse(BaseModel):
     success : bool
@@ -16,3 +17,4 @@ class LeaderboardSubmission(BaseModel):
     status : str
     reason : Optional[str]
     rank : int
+    created_at : str

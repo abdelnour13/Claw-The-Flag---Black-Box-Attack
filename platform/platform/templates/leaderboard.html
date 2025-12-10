@@ -218,6 +218,7 @@
                 <thead>
                     <tr>
                         <th>RANK</th>
+                        <th>TIME</th>
                         <th>TEAM</th>
                         <th>SCORE</th>
                         <th>STATUS</th>
@@ -225,24 +226,18 @@
                     </tr>
                 </thead>
                 <tbody id="leaderboardBody">
-                    <!-- Data will be inserted here -->
+                    {% for entry in entries %}
+                        <tr>
+                            <td class="rank rank-{{entry.rank}}">{{entry.rank}}</td>
+                            <td class="score">{{entry.hour}}</td>
+                            <td class="team-name">{{entry.team}}</td>
+                            <td class="score">{{entry.score}}</td>
+                            <td><span class="status">{{entry.status}}</span></td>
+                            <td class="submission-id">{{entry.id}}</td>
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
-
-            <!-- <div class="stats-bar">
-                <div class="stat-box">
-                    <div class="stat-value" id="totalSubmissions">0</div>
-                    <div class="stat-label">Total Submissions</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="successRate">0%</div>
-                    <div class="stat-label">Success Rate</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="topScore">0.00</div>
-                    <div class="stat-label">Top Score</div>
-                </div>
-            </div>-->
 
             <div style="text-align: center;">
                 <a href="/" class="back-link">&lt; BACK TO CHALLENGE</a>
@@ -250,53 +245,5 @@
         </div>
     </div>
 
-    <script>
-
-        async function renderLeaderboard() {
-
-            const leaderboardData = await fetch('/internal/leaderboard-data')
-                .then((res) => res.json());
-
-            const tbody = document.getElementById('leaderboardBody');
-            tbody.innerHTML = '';
-
-            leaderboardData.forEach(entry => {
-                const row = document.createElement('tr');
-                
-                const rankClass = entry.rank === 1 ? 'rank-1' : 
-                                 entry.rank === 2 ? 'rank-2' : 
-                                 entry.rank === 3 ? 'rank-3' : '';
-                
-                const statusClass = entry.status === 'SUCCESS' ? 'status-success' : 'status-failed';
-                
-                row.innerHTML = `
-                    <td class="rank ${rankClass}">#${entry.rank}</td>
-                    <td class="team-name">${entry.team}</td>
-                    <td class="score">${entry.score.toFixed(2)}</td>
-                    <td><span class="status ${statusClass}">${entry.status}</span></td>
-                    <td class="submission-id">${entry.id}</td>
-                `;
-                
-                tbody.appendChild(row);
-            });
-
-            // updateStats();
-        }
-
-        /* function updateStats() {
-            const totalSubmissions = leaderboardData.length;
-            const successfulSubmissions = leaderboardData.filter(e => e.status === 'SUCCESS').length;
-            const successRate = totalSubmissions > 0 ? ((successfulSubmissions / totalSubmissions) * 100).toFixed(0) : 0;
-            const topScore = leaderboardData.length > 0 ? Math.max(...leaderboardData.map(e => e.score)) : 0;
-
-            document.getElementById('totalSubmissions').textContent = totalSubmissions;
-            document.getElementById('successRate').textContent = successRate + '%';
-            document.getElementById('topScore').textContent = topScore.toFixed(2);
-        } */
-
-        // Render on load
-        renderLeaderboard();
-
-    </script>
 </body>
 </html>

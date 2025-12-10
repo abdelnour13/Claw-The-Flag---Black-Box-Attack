@@ -10,6 +10,8 @@ services:
       - ./platform/resources:/platform/resources
       - ./platform/public:/platform/public
       - ./platform/src:/platform/src
+      - ./platform/db/database.db:/platform/db/database.db
+      - ./platform/templates:/platform/templates
       - ./platform/.env:/platform/.env
     environment:
       SUBMITS_HOST_PATH: ${PWD}/platform/submits

@@ -1,7 +1,12 @@
 import os
+from datetime import datetime, timezone
 from sqlmodel import Field, Session, SQLModel, create_engine
+from sqlalchemy import Column, DateTime, func
 from typing import Optional, Annotated
 from fastapi import Depends
+from functools import partial
+
+utcnow = partial(datetime.now, tz=timezone.utc)
 
 ### Model
 class Submit(SQLModel, table=True):
@@ -10,6 +15,9 @@ class Submit(SQLModel, table=True):
     score : Optional[float] = Field()
     status : str = Field()
     reason : Optional[str] = Field()
+    created_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
 
 ### Database
 sqlite_file_name = os.path.join("db", "database.db")
