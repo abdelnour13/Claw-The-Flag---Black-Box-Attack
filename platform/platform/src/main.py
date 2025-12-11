@@ -20,7 +20,7 @@ from .models import SubmitResponse, StartJobResponse
 from .db import create_db_and_tables, SessionDep, Submit
 from .job import Job, run_submission
 from .utils import parse_file_size
-from .constants import MAX_REQUEST_SIZE, END_DATE
+from .constants import MAX_REQUEST_SIZE, END_DATE, MAX_UNZIPPED_SIZE
 
 ### Run Job function
 async def run_job() -> None:
@@ -196,6 +196,15 @@ def submit(file : UploadFile) -> SubmitResponse:
 
         ### Extract File
         with zipfile.ZipFile(file.file, 'r') as f:
+
+            total_uncompressed = 0
+
+            for info in f.infolist():
+                total_uncompressed += info.file_size
+
+            if total_uncompressed >= parse_file_size(MAX_UNZIPPED_SIZE):
+                return SubmitResponse(success=False,reason=f"Uncompressed File is too large, maximum is : {MAX_UNZIPPED_SIZE}.")
+
             f.extractall(submission)
 
         ### check if directory contains main.py

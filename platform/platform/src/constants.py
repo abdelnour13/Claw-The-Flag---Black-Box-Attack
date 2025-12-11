@@ -9,6 +9,7 @@ WORKER_CPUS = dotenv.get_key(".env", "WORKER_CPUS")
 WORKER_USE_GPU = dotenv.get_key(".env", "WORKER_USE_GPU") != "false"
 WORKER_TIMEOUT = dotenv.get_key(".env", "WORKER_TIMEOUT")
 MAX_REQUEST_SIZE = dotenv.get_key(".env", "MAX_REQUEST_SIZE")
+MAX_UNZIPPED_SIZE = dotenv.get_key(".env", "MAX_UNZIPPED_SIZE")
 END_DATE = dotenv.get_key(".env", "END_DATE")
 
 assert WORKER_MEMORY is not None, "WORKER_MEMORY is not set"
