@@ -44,6 +44,7 @@ And the response has the following format :
 **Submission :**
 
 The solution should be sent as a file `[YOUR_TEAM_NAME].zip` that contains both inference code (should be named : `main.py`) and any other resources the inference code may need such as your model's weights. The inference code should not have access to the interent or to any file outside of its containing folder.
+
 **Score :**
 
 Your model similarity to the hosted model will be compared to the hosted model by comparing their predictions probabilities on the same hidden test-set more specifically the average soft jaccard index will be utilized : 
