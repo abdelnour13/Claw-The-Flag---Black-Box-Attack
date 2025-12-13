@@ -1,10 +1,10 @@
 import torch
-import torch
 from torch import nn, Tensor
-from typing import Callable, Tuple, Optional
+from typing import Callable, Optional
 from torch.nn import functional as F
 from sentence_transformers import SentenceTransformer
 from torch.utils.data import TensorDataset, DataLoader
+from tqdm.auto import tqdm
 from src import utils
 
 class MLP(nn.Module):
@@ -32,15 +32,12 @@ class MLP(nn.Module):
             nn.BatchNorm1d(hidden_dims[0]) if norm else nn.Identity()
         ))
 
-
         for input_dim, output_dim in zip(hidden_dims[:-1], hidden_dims[1:]):
 
             self.layers.append(nn.Sequential(
                 nn.Linear(input_dim, output_dim),
-                nn.BatchNorm1d(out_dim) if norm else nn.Identity()
+                nn.BatchNorm1d(output_dim) if norm else nn.Identity()
             ))
-
-
         self.out = nn.Linear(hidden_dims[-1], out_dim)
 
     def forward(self, x : Tensor) -> Tensor:
@@ -52,53 +49,6 @@ class MLP(nn.Module):
         x = self.out_act(x)
 
         return x
-
-class Model(nn.Module):
-
-    def __init__(self,
-        in_dim : int,
-        hidden_dims : list[int],
-        out_dim : int,
-        act : Callable[[Tensor], Tensor] = F.relu,
-        norm : bool = False
-    ) -> None:
-        super().__init__()
-
-        self.in_dim = in_dim
-        self.hidden_dims = hidden_dims
-        self.out_dim = out_dim
-        self.act = act,
-
-        self.l_mlp = MLP(
-            in_dim=in_dim,
-            hidden_dims=hidden_dims,
-            out_dim=out_dim,
-            hidden_act=act,
-            out_act=nn.Identity(),
-            norm=norm
-        ) 
-
-        self.r_mlp = MLP(
-            in_dim=in_dim,
-            hidden_dims=hidden_dims,
-            out_dim=out_dim,
-            hidden_act=act,
-            out_act=nn.Identity(),
-            norm=norm
-        ) 
-
-        self.t = nn.Parameter(torch.scalar_tensor(1.0))
-
-    def forward(self, 
-        l : Tensor, 
-        r : Tensor,
-    ) -> Tuple[Tensor, Tensor]:
-
-        l = self.l_mlp(l)
-        r = self.r_mlp(r)
-
-        return l, r
-
 
 class Recommender:
 
@@ -117,25 +67,22 @@ class Recommender:
         self.sentence_bert = SentenceTransformer(self.checkpoint['sentence_bert_model'])
 
         ### Load Model
-        self.model = Model(
+        self.model = MLP(
             in_dim=self.checkpoint['config']['in_dim'],
             hidden_dims=self.checkpoint['config']['hidden_dims'],
             out_dim=self.checkpoint['config']['out_dim'],
-            act=getattr(F, self.checkpoint['config']['act']),
+            hidden_act=getattr(F, self.checkpoint['config']['hidden_act']),
+            out_act=getattr(F, self.checkpoint['config']['out_act']),
             norm=self.checkpoint['config']['norm']
         )
 
         self.model.load_state_dict(self.checkpoint['state_dict'])
         self.model.to(device).eval()
 
-        ### Keyword Embeddings
-        self.K : Tensor = self.checkpoint['K'].to(self.device)
+        ### Venues List
+        self.venues = self.checkpoint['venues']
 
-        ### Keywords List
-        self.keywords_list = self.checkpoint['keywords']
-
-    @torch.no_grad()
-    def get_keywords(self,
+    def get_venues(self,
         articles : list[str],
         batch_size : int,
         threshold : Optional[float] = None,
@@ -156,51 +103,44 @@ class Recommender:
             )
         )
 
-        ### Apply MLP-tuned
+        ### Apply MLP-head
         loader = DataLoader(TensorDataset(articles_embeddings), batch_size=batch_size, shuffle=False)
 
-        articles_embeddings = []
+        Y_hat = []
 
         for batch in loader:
             x = batch[0].to(self.device)
-            x = self.model.l_mlp.forward(x)
-            x = x.detach().cpu()
-            articles_embeddings.append(x)
+            y_hat = self.model.forward(x)
+            y_hat = y_hat.detach().cpu()
+            Y_hat.append(y_hat)
 
-        articles_embeddings = torch.cat(articles_embeddings)
+        Y_hat = torch.cat(Y_hat)
 
-        threshold = threshold or 0.0
-        loader = DataLoader(TensorDataset(articles_embeddings), batch_size=batch_size, shuffle=False)
-        keywords = [[] for _ in range(len(articles))]
-        offset = 0
+        ### Get venues
+        row, col = torch.argwhere(Y_hat).t()
+        probas = Y_hat[row, col]
+        venues = [[] for _ in articles]
 
-        for batch in loader:
+        for article_id, venue_id, proba in zip(row, col, probas):
+            venues[article_id].append((self.venues[venue_id], proba))
 
-            x = batch[0].to(self.device)
-            scores = torch.sigmoid((x @ self.K.T))
+        if top_k is not None:
+            venues = [
+                sorted(venue_list, key=lambda x : x[1], reverse=True)[:top_k]
+                for venue_list in venues
+            ]
 
-            threshold = threshold or 0.0
+        if threshold is not None:
 
-            if top_k:
-                k_th = torch.sort(scores, -1, descending=True).values[:,:top_k][:,[-1]]
-                thresholds = torch.where(threshold <= k_th, k_th, threshold)
-            
-            article_ids, keyword_ids = torch.argwhere(scores >= thresholds).t().cpu()
+            venues = [
+                [
+                    (venue, proba) for venue, proba in venue_list
+                    if proba >= threshold
+                ]
+                for venue_list in venues
+            ]
 
-            for article_id, keyword_id in zip(article_ids.tolist(), keyword_ids.tolist()):
-
-                score = scores[article_id, keyword_id].item()
-
-                keywords[article_id + offset].append((
-                    self.keywords_list[keyword_id],
-                    score
-                ))
-
-                keywords[article_id + offset] = sorted(keywords[article_id + offset], key=lambda x : x[1], reverse=True)
-            
-            offset += len(x)
-
-        return keywords
+        return venues
     
 
 __instances = {}

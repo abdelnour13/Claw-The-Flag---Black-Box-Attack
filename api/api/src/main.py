@@ -2,7 +2,7 @@ import constants as C
 from fastapi import FastAPI, Body, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from src.ml import load_model, Recommender
-from src.model import Keyword, DocumentsList
+from src.model import Category, DocumentsList
 from typing import List, Dict
 
 ### Create App
@@ -27,9 +27,9 @@ def predict(
     body : DocumentsList = Body(),
     threshold : float = Query(default=0.0, ge=0.0, le=1.0),
     k : int = Query(default=5, ge=1, le=10),
-) -> List[List[Keyword]]:
+) -> List[List[Category]]:
     
-    keywords = model.get_keywords(
+    venues = model.get_venues(
         articles=list(map(lambda doc : doc.description,body.documents)),
         batch_size=C.BATCH_SIZE,
         threshold=threshold,
@@ -38,13 +38,13 @@ def predict(
 
     return [
         [ 
-            Keyword(name=keyword[0], rank=i)
-            for i,keyword in enumerate(document_keywords)
+            Category(name=keyword[0], rank=i)
+            for i,keyword in enumerate(document_venues)
         ]
-        for document_keywords in keywords
+        for document_venues in venues
     ]
 
-### METADATA ENCPOINT
+### METADATA ENDPOINT
 @app.get("/metadata")
 def metadata() -> Dict:
 
@@ -54,3 +54,10 @@ def metadata() -> Dict:
         "tokenizer" : "ntlk.word_tokenize",
         "max_number_of_docs_per_request" : C.MAX_DOCUMENTS,
     }
+
+### METADATA ENDPOINT
+@app.get("/labels")
+def metadata(
+    model : Recommender = Depends(lambda: load_model(C.MODEL_PATH))
+) -> list[str]:
+    return model.venues

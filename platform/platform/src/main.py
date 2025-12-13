@@ -20,7 +20,7 @@ from .models import SubmitResponse, StartJobResponse
 from .db import create_db_and_tables, SessionDep, Submit
 from .job import Job, run_submission
 from .utils import parse_file_size
-from .constants import MAX_REQUEST_SIZE, END_DATE, MAX_UNZIPPED_SIZE
+from .constants import MAX_REQUEST_SIZE, END_DATE, MAX_UNZIPPED_SIZE, THRESHOLD, FLAG
 
 ### Run Job function
 async def run_job() -> None:
@@ -47,7 +47,9 @@ async def run_job() -> None:
             session.commit()
 
             ### Emit event
-            job_events[job.job_id] = json.dumps(asdict(res))
+            event = asdict(res)
+            event['flag'] = FLAG if (res.score is not None) and res.score >= THRESHOLD else None
+            job_events[job.job_id] = json.dumps(event)
 
         job_queue.task_done()
 
@@ -78,7 +80,7 @@ public_router = APIRouter()
 internal_router = APIRouter(dependencies=[Depends(check_challenge_ended)])
 templates = Jinja2Templates(directory="templates")
 
-### Memory
+### Jobs Store
 jobs : Dict[str, Job] = {}
 job_events = {}
 job_queue : asyncio.Queue[Tuple[Job, SessionDep]] = asyncio.Queue()
@@ -197,6 +199,8 @@ def submit(file : UploadFile) -> SubmitResponse:
         ### Extract File
         with zipfile.ZipFile(file.file, 'r') as f:
 
+            ### Check true size  before compressing
+            ### to prevent zip bombs attacks
             total_uncompressed = 0
 
             for info in f.infolist():
@@ -211,19 +215,16 @@ def submit(file : UploadFile) -> SubmitResponse:
         main_file : Path = submission / 'main.py'
 
         if not main_file.exists():
+            shutil.rmtree(submission)
             return SubmitResponse(success=False, reason="Main file doesn't exist.")
 
         ### Copy resources to the job
         resources = Path("resources")
 
-        keywords_src = resources / 'keywords.txt'
-        articles_src = resources / 'articles.csv'
+        data_src = resources / 'articles.csv'
+        data_dst = submission / 'articles.csv'
 
-        keywords_dst = submission / 'keywords.txt'
-        articles_dst = submission / 'articles.csv'
-
-        shutil.copyfile(keywords_src, keywords_dst)
-        shutil.copyfile(articles_src, articles_dst)
+        shutil.copyfile(data_src, data_dst)
 
         ### Save The Job
         jobs[job_id] = Job(
@@ -252,6 +253,7 @@ async def start_job(job_id : str, session: SessionDep) -> StartJobResponse:
             }
         )
     
+    ### Move to active jobs queue
     await job_queue.put((job,session))
     return StartJobResponse(success=True)
 

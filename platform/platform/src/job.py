@@ -35,7 +35,9 @@ def run_submission(job : Job) -> Response:
     ### Run main file
     try:
 
+        logs = Path('logs')
         submits = os.environ['SUBMITS_HOST_PATH']
+        log_file_path = os.path.join(logs, f'{job.job_id}.log')
 
         cmd = filter(None, [
             "docker", 
@@ -51,12 +53,16 @@ def run_submission(job : Job) -> Response:
             "bash", "-c", 'cd /job && python main.py'
         ])
 
-        subprocess.run(
-            cmd,
-            cwd=job.filename,
-            check=True,
-            timeout=WORKER_TIMEOUT
-        )
+        with open(log_file_path, "w") as log_file:
+
+            subprocess.run(
+                cmd,
+                cwd=job.filename,
+                check=True,
+                timeout=WORKER_TIMEOUT,
+                stdout=log_file,
+                stderr=subprocess.STDOUT
+            )
 
     except subprocess.CalledProcessError as e:
         res.success = False
@@ -78,7 +84,7 @@ def run_submission(job : Job) -> Response:
     if res.success:
 
         try:
-            preds = np.load(results_file, allow_pickle=False)
+            preds = np.clip(np.load(results_file, allow_pickle=False), 0, 1.0)
         except:
             res.success = False
             res.reason = "Job produced an invalid numpy file."

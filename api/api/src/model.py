@@ -20,6 +20,6 @@ class Document(BaseModel):
 class DocumentsList(BaseModel):
     documents : List[Document] = Field(min_length=1, max_length=C.MAX_DOCUMENTS)
 
-class Keyword(BaseModel):
+class Category(BaseModel):
     name : str
     rank : int

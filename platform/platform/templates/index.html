@@ -243,8 +243,69 @@
             transform: translateY(-2px);
         }
 
+        .copy-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(115, 32, 84, 0.1);
+            border: 1px solid #732054;
+            padding: 12px 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .copy-text {
+            flex: 1;
+            color: #00ff41;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #B02D3B 0%, #732054 100%);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(176, 45, 59, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .copy-btn:hover {
+            box-shadow: 0 0 20px rgba(176, 45, 59, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .copy-icon {
+            font-size: 1.1em;
+        }
+
+        .hidden {
+            display: none;
+            visibility: hidden;
+        }
+
     </style>
 </head>
+
 <body data-ended="{{challenge_ended}}" >
     <div class="matrix-bg"></div>
     <div class="scanline"></div>
@@ -319,6 +380,14 @@
             </button>
 
             <div id="status" class="status"></div>
+
+            <div class="copy-container hidden" id="flag" >
+                <div class="copy-text" id="copyText">YOUR_TEXT_HERE</div>
+                <button class="copy-btn" id="flag-copy-btn">
+                    <span class="copy-icon">📋</span>
+                    <span class="copy-label">COPY FLAG</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -329,14 +398,18 @@
         const submitBtn = document.getElementById('submitBtn');
         const status = document.getElementById('status');
         const challenge_ended = document.body.dataset['ended'].toLowerCase() === "true";
+        const flagCopyBtn = document.getElementById("flag-copy-btn");
 
         fileInput.addEventListener('change', (e) => {
+
+            document.getElementById('flag').classList.add('hidden');
 
             if (challenge_ended) {
                 return;
             }
 
             const file = e.target.files[0];
+
             if (file) {
                 if (file.name.endsWith('.zip')) {
                     fileInfo.style.display = 'block';
@@ -352,6 +425,7 @@
                     submitBtn.disabled = true;
                 }
             }
+
         });
 
         submitBtn.addEventListener('click', async (ev) => {
@@ -391,7 +465,7 @@
 
                     if (response.ok) {
 
-                        const content = await response.json()
+                        const content = await response.json();
                         
                         if (content['success']) {
 
@@ -408,6 +482,12 @@
                                 type = data["success"] ? "info" : "error";
                                 message = data["success"] ? `Score : ${(100 * data['score']).toFixed(2)}%` : data["reason"];
                                 showStatus(type, message);
+
+                                if(data['success'] && data['flag'] !== null) {
+                                    const text = document.getElementById('copyText');
+                                    text.innerText = data['flag'];
+                                    document.getElementById('flag').classList.remove('hidden');
+                                }
 
                                 evtSource.close();
                             };
@@ -459,6 +539,30 @@
         function hideStatus() {
             status.style.display = 'none';
         }
+
+        flagCopyBtn.addEventListener('click', (event) => {
+
+            const text = document.getElementById('copyText').innerText;
+            console.log(text)
+
+            navigator.clipboard.writeText(text).then(() => {
+
+                const label = flagCopyBtn.querySelector('.copy-label');
+                
+                // Change button appearance
+                flagCopyBtn.classList.add('copied');
+                label.textContent = 'COPIED!';
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    flagCopyBtn.classList.remove('copied');
+                    label.textContent = 'COPY';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+
+        })
 
     </script>
 </body>
