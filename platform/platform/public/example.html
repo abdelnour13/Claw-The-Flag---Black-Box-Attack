@@ -1,44 +1,200 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>Untitled</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="generator" content="CoolUtils HTML exporter" />
-<style type="text/css">
-<!--
-body { color: #000000; background-color: #FFFFFF; }
-.python1-classname { color: #000080; font-weight: bold; }
-.python1-comment { color: #808080; font-style: italic; }
-.python1-commentedcode { color: #C0C0C0; font-style: italic; }
-.python1-documentation { color: #CC00FF; }
-.python1-float { color: #008080; }
-.python1-functionname { color: #008080; font-weight: bold; }
-.python1-hexadecimal { color: #008080; }
-.python1-identifier { color: #000000; }
-.python1-matchingbrace { color: #0000FF; font-weight: bold; }
-.python1-multi-linestring { color: #808000; }
-.python1-nonreservedkeyword { color: #000080; }
-.python1-number { color: #008080; }
-.python1-octal { color: #008080; }
-.python1-reservedword { font-weight: bold; }
-.python1-space { color: #C0C0C0; }
-.python1-string { color: #808000; }
-.python1-symbol { color: #800000; }
-.python1-syntaxerror { color: #FF0000; }
-.python1-systemfunctionsandvariables { font-weight: bold; }
-.python1-unbalancedbrace { color: #FFFF00; }
--->
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inference Code</title>
+    <link rel="stylesheet" href="/public/style.css">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            z-index: 0;
+            pointer-events: none;
+            background: 
+                linear-gradient(90deg, #00ff41 1px, transparent 1px),
+                linear-gradient(#00ff41 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(176, 45, 59, 0.05) 50%,
+                transparent 100%
+            );
+            animation: scan 8s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .code-container {
+            background: rgba(10, 10, 10, 0.95);
+            border: 2px solid #B02D3B;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 
+                0 0 20px rgba(176, 45, 59, 0.5),
+                inset 0 0 20px rgba(115, 32, 84, 0.2);
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .code-container::before {
+            content: '●●●';
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            color: #732054;
+            font-size: 0.8em;
+            letter-spacing: 5px;
+        }
+
+        pre {
+            margin: 0;
+            padding-top: 20px;
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        /* Python syntax highlighting - adapted to dark theme */
+        .python1-reservedword { 
+            color: #B02D3B; 
+            font-weight: bold; 
+        }
+        .python1-identifier { 
+            color: #00ff41; 
+        }
+        .python1-string { 
+            color: #ffff00; 
+        }
+        .python1-number { 
+            color: #00ccff; 
+        }
+        .python1-comment, .python1-commentedcode { 
+            color: #666666; 
+            font-style: italic; 
+        }
+        .python1-classname { 
+            color: #ff6b6b; 
+            font-weight: bold; 
+        }
+        .python1-functionname { 
+            color: #732054; 
+            font-weight: bold; 
+        }
+        .python1-symbol { 
+            color: #d0d0d0; 
+        }
+        .python1-space { 
+            color: transparent; 
+        }
+        .python1-nonreservedkeyword { 
+            color: #ff9966; 
+        }
+        .python1-systemfunctionsandvariables { 
+            color: #cc99ff; 
+            font-weight: bold; 
+        }
+
+        .copy-btn-container {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #B02D3B 0%, #732054 100%);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(176, 45, 59, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .copy-btn:hover {
+            box-shadow: 0 0 20px rgba(176, 45, 59, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .code-container {
+                padding: 20px;
+            }
+            
+            code {
+                font-size: 0.8em;
+            }
+        }
+    </style>
 </head>
 <body>
-<!--StartFragment--><pre><code><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">pandas</span><span class="python1-space"> </span><span class="python1-reservedword">as</span><span class="python1-space"> </span><span class="python1-identifier">pd
+    <div class="matrix-bg"></div>
+    <div class="scanline"></div>
+
+    <div class="container">
+        <div class="code-container">
+            <div class="copy-btn-container">
+                <button class="copy-btn" id="copy-btn" >
+                    <span>📋</span>
+                    <span class="copy-label">COPY</span>
+                </button>
+            </div>
+
+<pre><code><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">pandas</span><span class="python1-space"> </span><span class="python1-reservedword">as</span><span class="python1-space"> </span><span class="python1-identifier">pd
 </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">torch
 </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">numpy</span><span class="python1-space"> </span><span class="python1-reservedword">as</span><span class="python1-space"> </span><span class="python1-identifier">np
 </span><span class="python1-reservedword">from</span><span class="python1-space"> </span><span class="python1-identifier">torch</span><span class="python1-space"> </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">Tensor</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">nn
 </span><span class="python1-reservedword">from</span><span class="python1-space"> </span><span class="python1-identifier">torch</span><span class="python1-symbol">.</span><span class="python1-identifier">nn</span><span class="python1-space"> </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">functional</span><span class="python1-space"> </span><span class="python1-reservedword">as</span><span class="python1-space"> </span><span class="python1-identifier">F
 </span><span class="python1-reservedword">from</span><span class="python1-space"> </span><span class="python1-identifier">typing</span><span class="python1-space"> </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">Callable
-</span><span class="python1-reservedword">from</span><span class="python1-space"> </span><span class="python1-identifier">sentence_transformers</span><span class="python1-space"> </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">SentenceTransformer
 </span><span class="python1-reservedword">from</span><span class="python1-space"> </span><span class="python1-identifier">torch</span><span class="python1-symbol">.</span><span class="python1-identifier">utils</span><span class="python1-symbol">.</span><span class="python1-identifier">data</span><span class="python1-space"> </span><span class="python1-reservedword">import</span><span class="python1-space"> </span><span class="python1-identifier">DataLoader</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">TensorDataset
 
 </span><span class="python1-commentedcode">### Constants
@@ -107,38 +263,64 @@ chkp</span><span class="python1-space"> </span><span class="python1-symbol">=</s
 </span><span class="python1-space">    </span><span class="python1-identifier">in_dim</span><span class="python1-symbol">=</span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">&quot;config&quot;</span><span class="python1-symbol">][</span><span class="python1-string">&quot;in_dim&quot;</span><span class="python1-symbol">],
 </span><span class="python1-space">    </span><span class="python1-identifier">hidden_dims</span><span class="python1-symbol">=</span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">&quot;config&quot;</span><span class="python1-symbol">][</span><span class="python1-string">&quot;hidden_dims&quot;</span><span class="python1-symbol">],
 </span><span class="python1-space">    </span><span class="python1-identifier">out_dim</span><span class="python1-symbol">=</span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">&quot;config&quot;</span><span class="python1-symbol">][</span><span class="python1-string">&quot;out_dim&quot;</span><span class="python1-symbol">],
-</span><span class="python1-space">    </span><span class="python1-identifier">hidden_act</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">getattr</span><span class="python1-symbol">(</span><span class="python1-identifier">F</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">&quot;config&quot;</span><span class="python1-symbol">][</span><span class="python1-string">&quot;hidden_act&quot;</span><span class="python1-symbol">]),
-</span><span class="python1-space">    </span><span class="python1-identifier">out_act</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">getattr</span><span class="python1-symbol">(</span><span class="python1-identifier">F</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">&quot;config&quot;</span><span class="python1-symbol">][</span><span class="python1-string">&quot;out_act&quot;</span><span class="python1-symbol">]),
-</span><span class="python1-space">    </span><span class="python1-identifier">norm</span><span class="python1-symbol">=</span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">&quot;config&quot;</span><span class="python1-symbol">][</span><span class="python1-string">&quot;norm&quot;</span><span class="python1-symbol">],
-)
+</span><span class="python1-space">    </span><span class="python1-identifier">hidden_act</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">getattr</span><span class="python1-symbol">(</span><span class="python1-identifier">F</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">"config"</span><span class="python1-symbol">][</span><span class="python1-string">"hidden_act"</span><span class="python1-symbol">]),
+</span><span class="python1-space">    </span><span class="python1-identifier">out_act</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">getattr</span><span class="python1-symbol">(</span><span class="python1-identifier">F</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">"config"</span><span class="python1-symbol">][</span><span class="python1-string">"out_act"</span><span class="python1-symbol">]),
+</span><span class="python1-space">    </span><span class="python1-identifier">norm</span><span class="python1-symbol">=</span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">"config"</span><span class="python1-symbol">][</span><span class="python1-string">"norm"</span><span class="python1-symbol">],
+    )
 
 </span><span class="python1-reservedword">print</span><span class="python1-symbol">(</span><span class="python1-identifier">mlp_head</span><span class="python1-symbol">.</span><span class="python1-identifier">load_state_dict</span><span class="python1-symbol">(</span><span class="python1-identifier">chkp</span><span class="python1-symbol">[</span><span class="python1-string">'state_dict'</span><span class="python1-symbol">]))
-
 </span><span class="python1-identifier">mlp_head</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-identifier">mlp_head</span><span class="python1-symbol">.</span><span class="python1-identifier">to</span><span class="python1-symbol">(</span><span class="python1-identifier">DEVICE</span><span class="python1-symbol">).</span><span class="python1-identifier">eval</span><span class="python1-symbol">()
-
 </span><span class="python1-commentedcode">### Inference
 </span><span class="python1-identifier">loader</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-identifier">DataLoader</span><span class="python1-symbol">(
-</span><span class="python1-space">    </span><span class="python1-identifier">dataset</span><span class="python1-symbol">=</span><span class="python1-identifier">TensorDataset</span><span class="python1-symbol">(</span><span class="python1-identifier">articles_embeddings</span><span class="python1-symbol">),</span><span class="python1-space"> 
-    </span><span class="python1-identifier">batch_size</span><span class="python1-symbol">=</span><span class="python1-identifier">BATCH_SIZE</span><span class="python1-symbol">,</span><span class="python1-space"> 
-    </span><span class="python1-identifier">drop_last</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">False</span><span class="python1-symbol">,</span><span class="python1-space"> 
-    </span><span class="python1-identifier">shuffle</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">False
+</span><span class="python1-space">    </span><span class="python1-identifier">dataset</span><span class="python1-symbol">=</span><span class="python1-identifier">TensorDataset</span><span class="python1-symbol">(</span><span class="python1-identifier">articles_embeddings</span><span class="python1-symbol">),</span><span class="python1-space">
+</span><span class="python1-space">    </span><span class="python1-identifier">batch_size</span><span class="python1-symbol">=</span><span class="python1-identifier">BATCH_SIZE</span><span class="python1-symbol">,</span><span class="python1-space">
+</span<span class="python1-space">    </span><span class="python1-identifier">drop_last</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">False</span><span class="python1-symbol">,</span><span class="python1-space">
+</span><span class="python1-space">    </span><span class="python1-identifier">shuffle</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">False
 </span><span class="python1-symbol">)
 
 </span><span class="python1-reservedword">with</span><span class="python1-space"> </span><span class="python1-identifier">torch</span><span class="python1-symbol">.</span><span class="python1-identifier">inference_mode</span><span class="python1-symbol">():
-
 </span><span class="python1-space">    </span><span class="python1-identifier">Y</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-symbol">[]
-
 </span><span class="python1-space">    </span><span class="python1-reservedword">for</span><span class="python1-space"> </span><span class="python1-identifier">x</span><span class="python1-space"> </span><span class="python1-reservedword">in</span><span class="python1-space"> </span><span class="python1-identifier">loader</span><span class="python1-symbol">:
 </span><span class="python1-space">        </span><span class="python1-identifier">x</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-identifier">x</span><span class="python1-symbol">[</span><span class="python1-number">0</span><span class="python1-symbol">].</span><span class="python1-identifier">to</span><span class="python1-symbol">(</span><span class="python1-identifier">DEVICE</span><span class="python1-symbol">)
 </span><span class="python1-space">        </span><span class="python1-identifier">y</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-identifier">mlp_head</span><span class="python1-symbol">(</span><span class="python1-identifier">x</span><span class="python1-symbol">)
 </span><span class="python1-space">        </span><span class="python1-identifier">Y</span><span class="python1-symbol">.</span><span class="python1-identifier">append</span><span class="python1-symbol">(</span><span class="python1-identifier">y</span><span class="python1-symbol">)
-
 </span><span class="python1-space">    </span><span class="python1-identifier">Y</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-identifier">torch</span><span class="python1-symbol">.</span><span class="python1-identifier">cat</span><span class="python1-symbol">(</span><span class="python1-identifier">Y</span><span class="python1-symbol">)
-
-</span><span class="python1-reservedword">print</span><span class="python1-symbol">(</span><span class="python1-identifier">f</span><span class="python1-string">&quot;Dimensions : {Y.size(0)}x{Y.size(1)}.&quot;</span><span class="python1-symbol">)
+</span><span class="python1-reservedword">print</span><span class="python1-symbol">(</span><span class="python1-identifier">f</span><span class="python1-string">"Dimensions : {Y.size(0)}x{Y.size(1)}."</span><span class="python1-symbol">)
 
 </span><span class="python1-commentedcode">### Save
 </span><span class="python1-identifier">preds</span><span class="python1-space"> </span><span class="python1-symbol">=</span><span class="python1-space"> </span><span class="python1-identifier">Y</span><span class="python1-symbol">.</span><span class="python1-identifier">detach</span><span class="python1-symbol">().</span><span class="python1-identifier">cpu</span><span class="python1-symbol">().</span><span class="python1-identifier">numpy</span><span class="python1-symbol">()
-</span><span class="python1-identifier">np</span><span class="python1-symbol">.</span><span class="python1-identifier">save</span><span class="python1-symbol">(</span><span class="python1-nonreservedkeyword">file</span><span class="python1-symbol">=</span><span class="python1-string">&quot;./scores.npy&quot;</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">arr</span><span class="python1-symbol">=</span><span class="python1-identifier">preds</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">allow_pickle</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">False</span><span class="python1-symbol">)
-</span></code></pre><!--EndFragment--></body>
+</span><span class="python1-identifier">np</span><span class="python1-symbol">.</span><span class="python1-identifier">save</span><span class="python1-symbol">(</span><span class="python1-nonreservedkeyword">file</span><span class="python1-symbol">=</span><span class="python1-string">"./scores.npy"</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">arr</span><span class="python1-symbol">=</span><span class="python1-identifier">preds</span><span class="python1-symbol">,</span><span class="python1-space"> </span><span class="python1-identifier">allow_pickle</span><span class="python1-symbol">=</span><span class="python1-nonreservedkeyword">False</span><span class="python1-symbol">)
+</span></code></pre>
+</div>
+</div>
+
+<script>
+
+    const btn = document.getElementById("copy-btn");
+
+    btn.addEventListener('click', function (ev) {
+
+        const codeElement = document.querySelector('code');
+        const text = codeElement.innerText;
+        
+        navigator.clipboard.writeText(text).then(() => {
+
+            const label = btn.querySelector('.copy-label');
+            
+            btn.classList.add('copied');
+            label.textContent = 'COPIED!';
+            
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                label.textContent = 'COPY';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+        });
+
+    });
+
+</script>
+
+</body>
 </html>
