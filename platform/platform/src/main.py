@@ -20,9 +20,14 @@ from .models import SubmitResponse, StartJobResponse
 from .db import create_db_and_tables, SessionDep, Submit
 from .job import Job, run_submission
 from .utils import parse_file_size
-from .constants import MAX_REQUEST_SIZE, END_DATE, MAX_UNZIPPED_SIZE, THRESHOLD, FLAG
+from .constants import (
+    MAX_REQUEST_SIZE, END_DATE, MAX_UNZIPPED_SIZE, THRESHOLD, FLAG,
+    WORKER_MEMORY, WORKER_TIMEOUT, WORKER_USE_GPU
+)
 
 ### Run Job function
+job_semaphore = asyncio.Semaphore(1)  # or 2, 3
+
 async def run_job() -> None:
 
     while True:
@@ -32,7 +37,8 @@ async def run_job() -> None:
         if job is not None:
 
             ### Run Sumbission
-            res = run_submission(job)
+            async with job_semaphore:
+                res = await asyncio.to_thread(run_submission, job)
 
             ### Insert to database
             submission = Submit(
@@ -167,13 +173,26 @@ def leaderboard(
         request=request,
         name="leaderboard.html",
         context={
-            "entries" : entries
+            "entries" : entries,
+            "queue_size" : job_queue.qsize(),
         }
     )
 
 @public_router.get("/details")
-def details():
-    return FileResponse('public/details.html')
+def details(request : Request):
+
+    return templates.TemplateResponse(
+        request=request,
+        name='details.html',
+        context={
+            "worker_memory" : WORKER_MEMORY,
+            "worker_timeout" : WORKER_TIMEOUT,
+            "worker_use_gpu" : WORKER_USE_GPU,
+            "max_request_size" : MAX_REQUEST_SIZE,
+            "max_unzipped_size" : MAX_UNZIPPED_SIZE,
+            "threshold" : THRESHOLD
+        }
+    )
 
 @public_router.get("/429")
 def error_page_429():
@@ -221,8 +240,8 @@ def submit(file : UploadFile) -> SubmitResponse:
         ### Copy resources to the job
         resources = Path("resources")
 
-        data_src = resources / 'articles.csv'
-        data_dst = submission / 'articles.csv'
+        data_src = resources / 'embeddings.npy'
+        data_dst = submission / 'embeddings.npy'
 
         shutil.copyfile(data_src, data_dst)
 

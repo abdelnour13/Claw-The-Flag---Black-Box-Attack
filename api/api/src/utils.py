@@ -10,10 +10,10 @@ def check_num_tokens(
 
     num_tokens = len(word_tokenize(document))
 
-    if num_tokens < min_tokens:
+    if num_tokens <= min_tokens:
         raise ValueError(f"Document contains {num_tokens} tokens which is lower than the lower bound {min_tokens}.")
         
-    if num_tokens > max_token:
+    if num_tokens >= max_token:
         raise ValueError(f"Document contains {num_tokens} tokens which is higher than the upper bound {min_tokens}.")
         
     return document
