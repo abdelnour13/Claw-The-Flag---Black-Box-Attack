@@ -3,7 +3,7 @@ from tabulate import tabulate
 
 if __name__ == '__main__':
 
-    URL = "http://0.0.0.0:8000/predict"
+    URL = "https://api-send.ctf.clawtheflag.com/predict" # "http://0.0.0.0:8000/predict"
 
     params = [
         ('threshold', 0.6),

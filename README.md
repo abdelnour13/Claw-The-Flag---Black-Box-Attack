@@ -1,55 +1,139 @@
-# What is Black-Box attack ?
+# Black-Box Attack Challenge
 
-Black-box attack is a type of cybersecurity attack where the attacker — despite having no knowledge of the internal workings of a given system — uses trial and error and observes the system’s output for certain inputs to gain information about its internal behavior and reveal vulnerabilities, which can then be exploited.
+## Challenge Details
 
-Black-box attacks are even more concerning when it comes to machine learning systems that allow users to interact with a model through an interface such as an API endpoint, while the system does not want to make its model weights publicly available. A successful black-box attack can allow an unauthorized party to obtain a model with capabilities similar to the one being hosted.
+### What is a Black-Box Attack?
 
-# Toy Endpoint :
+A **black-box attack** is a type of cybersecurity attack where the attacker has **no knowledge of the internal workings** of a system. Instead, they interact with it through inputs and observe outputs to infer behavior and uncover vulnerabilities.
 
-`POST /predict?k=K&threshold=THRESHOLD HTTP/1.1` allows users to interact with a model that is trained to predict keywords of **scientific articles** based on their abstracts. The endpoint allows bulk requests of maximum size of 64 document per request and returns the top-`K` most releveant keywords with a threshold higher than `THRESHOLD`. The endpoint expects the body to be in the following format : 
+This is particularly concerning for **machine learning systems** exposed via APIs. Even without access to model weights, repeated querying can allow an attacker to reconstruct a model with capabilities similar to the hosted one.
+
+---
+
+## Toy Endpoint
+
+```
+POST /predict?k=K&threshold=THRESHOLD
+```
+
+This endpoint allows interaction with a model trained to predict **venues of scientific articles** based on their abstracts.
+
+**Key properties:**
+
+* Maximum batch size: **64 documents per request**
+* Returns **Top-K** most relevant venues
+* Results filtered by a relevance threshold
+* Predictions are ranked by relevance
+* Each document must contain **16–300 tokens** (tokenized using `nltk.word_tokenize`)
+
+---
+
+## Request Format
 
 ```json
 {
-    "documents" : [
-        {
-            "description" : "....",
-        },
-        {
-            "description" : "....",
-        }
-    ]
+  "documents": [
+    { "description": "..." },
+    { "description": "..." }
+  ]
 }
 ```
 
-And the response has the following format : 
+---
+
+## Response Format
 
 ```json
 [
-    [
-        { "name" : "keyword_name", "rank" : 0 },
-        { "name" : "keyword_name", "rank" : 1 },
-        ...
-    ],
-    [
-        { "name" : "keyword_name", "rank" : 0 },
-        { "name" : "keyword_name", "rank" : 1 },
-        ...
-    ],
-    ...
+  [
+    { "name": "keyword_name", "rank": 0 },
+    { "name": "keyword_name", "rank": 1 }
+  ],
+  [
+    { "name": "keyword_name", "rank": 0 },
+    { "name": "keyword_name", "rank": 1 }
+  ]
 ]
 ```
 
-# Solution submission & scoring
+---
 
-**Submission :**
+## Helper Endpoint
 
-The solution should be sent as a file `[YOUR_TEAM_NAME].zip` that contains both inference code (should be named : `main.py`) and any other resources the inference code may need such as your model's weights. The inference code should not have access to the interent or to any file outside of its containing folder.
+```
+GET /labels
+```
 
-**Score :**
+Use this endpoint to retrieve the index of each label. This helps ensure your model’s predictions align with the hosted model’s label ordering.
 
-Your model similarity to the hosted model will be compared to the hosted model by comparing their predictions probabilities on the same hidden test-set more specifically the average soft jaccard index will be utilized : 
+---
 
-$$
-\text{Soft Jaccard}_{\text{avg}} = \frac{1}{N} \sum_{i=1}^{N} 
-\frac{\sum_{k} \min(y_{ik}, \hat{y}_{ik})}{\sum_{k} \max(y_{ik}, \hat{y}_{ik})}
-$$
+## Scoring Method
+
+Your model will be evaluated by comparing its prediction probabilities against the hosted model on a hidden test set using the **average soft Jaccard index**:
+
+```
+Soft Jaccard_avg = (1/N) * Σ_i [ Σ_k min(y_ik, ŷ_ik) / Σ_k max(y_ik, ŷ_ik) ]
+```
+
+Where:
+
+* `y` = hosted model predictions
+* `ŷ` = your model predictions
+
+If your similarity score exceeds **`0.75`**, you will receive the flag confirming your winner status.
+
+---
+
+## What Do We Know?
+
+* The hosted model uses **SentenceTransformer("all-MiniLM-L6-v2")** embeddings
+* No specific preprocessing is applied
+* The training dataset is unknown
+
+---
+
+## Submission Requirements
+
+Submissions must be provided as a **`.zip` file** containing inference code that runs on a hidden test set.
+
+At runtime, your code will have access to:
+
+* `embeddings.npy`: Sentence-BERT embeddings of the hidden test articles
+
+Your task is to estimate the probability of each **article–venue** pair.
+
+**Requirements:**
+
+* File name: **`[YOUR_TEAM_NAME].zip`**
+* Maximum size: **`10M`**
+* Must contain `main.py`
+* Include all model weights and required resources
+* Must generate a `scores.npy` file
+* See the provided working example for reference
+
+---
+
+## Environment Constraints
+
+* Maximum execution time: **`90 seconds`**
+* Maximum memory usage: **`8G`**
+* GPU availability: **`FALSE`**
+
+---
+
+## Advice
+
+To ensure your submission runs correctly:
+
+* Use device-agnostic code:
+
+  ```python
+  DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+  ```
+* Load checkpoints on the correct device:
+
+  ```python
+  torch.load(..., map_location=DEVICE)
+  ```
+* Test inference runtime locally first (test set contains ~7k articles) to avoid timeouts

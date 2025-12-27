@@ -128,7 +128,8 @@ def leaderboard(
         select(SubmitInner.id)
         .where(
             SubmitInner.team == Submit.team,
-            SubmitInner.status == "SUCCESS"
+            SubmitInner.status == "SUCCESS",
+            SubmitInner.score.is_not(None)
         )
         .order_by(
             SubmitInner.score.desc(),
@@ -161,7 +162,7 @@ def leaderboard(
             "id" : result.id, 
             "team" : result.team,
             "hour" : result.created_at.strftime("%H:%M:%S"),
-            "score" : result.score,
+            "score" : result.score if result.score is not None else 0.0,
             "status" : result.status,
             "reason" : result.reason,
             "rank" : rank
