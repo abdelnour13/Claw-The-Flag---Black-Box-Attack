@@ -305,8 +305,8 @@ def annotate(
     "id": 123,
     "abstract": "...",
     "venues": {
-      "cs.AI": {"rank": 0, "min_th": 0.9},
-      "cs.LG": {"rank": 1, "min_th": 0.7}
+      "info.info-ai": {"rank": 0, "min_th": 0.9},
+      "info.info-wb": {"rank": 1, "min_th": 0.7}
     }
   }
 }
@@ -314,7 +314,7 @@ def annotate(
 
 ---
 
-## Execute Annotation with Fine-Grained Thresholds
+## Execute Annotation with Threshold Varying
 ```python
 annotated_data = annotate(data, th_step=0.1)
 ```
@@ -771,7 +771,7 @@ torch.save(checkpoint, 'mlp_head_chkp.pt')
 **Checkpoint includes**:
 - Model architecture configuration.
 - Trained weights.
-- Ready for submission inference code (see inference.py).
+- Ready for submission inference code (see main.py).
 
 ## Submission Results
 
