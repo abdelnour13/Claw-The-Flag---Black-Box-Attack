@@ -1,0 +1,41 @@
+{
+    "query": {
+        "teams": [  
+            "LS2N",
+            "LTEN",
+            "SECALIM",
+            "LIX",
+            "CESI",
+            "CRISTAL",
+            "IRISA",
+            "CRIL",
+            "LABRI",
+            "LTCI",
+            "LMF",
+            "LIAS",
+            "LIG",
+            "LIUPPA",
+            "LIS",
+            "INRIA"
+        ],
+        "format": "json",
+        "attributes": [
+            "docid",
+            "title_s",
+            "keyword_s",
+            "abstract_s",
+            "authFullName_s",
+            "producedDate_tdate",
+            "domainAllCode_s"
+        ],
+        "from_": "*",
+        "to": "*",
+        "languages": [
+            "en"
+        ],
+        "sort": "producedDate_tdate desc"
+    },
+    "num_row_per_page": 128,
+    "num_pages": null,
+    "save_dir": "."
+}

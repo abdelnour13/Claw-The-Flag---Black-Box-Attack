@@ -1,5 +1,6 @@
 inference_example/*
 inference_example.zip
 solution/*
-training/*
 *.zip
+__pycache__/*
+*.jsonl

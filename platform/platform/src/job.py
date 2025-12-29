@@ -36,7 +36,7 @@ def run_submission(job : Job) -> Response:
     try:
 
         logs = Path('logs')
-        submits = os.environ['SUBMITS_HOST_PATH']
+        submits = "/home/abdelnour/Documents/Challenge-V2.0/platform/platform/submits" # os.environ['SUBMITS_HOST_PATH']
         log_file_path = os.path.join(logs, f'{job.job_id}.log')
 
         cmd = filter(None, [

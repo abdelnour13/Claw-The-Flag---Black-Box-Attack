@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/job/main.py", line 101, in <module>
+Dimensions : 7186x384.
+    out_act=getattr(F, chkp["config"]["out_act"]),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'torch.nn.functional' has no attribute 'Identity'
